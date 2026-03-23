@@ -13,8 +13,24 @@ exports.register = async (req,res,next) => {
         // res.status(200).json({success:true, token});
         sendTokenResponse(user,200,res);
     } catch(err) {
-        res.status(400).json({success:false});
-        console.log(err.stack);
+        console.log(err);
+        let message = 'Registration failed';
+        
+        // Handle duplicate email error
+        if (err.code === 11000) {
+            message = 'This email is already registered. Please use a different email.';
+        }
+        // Handle validation errors
+        else if (err.errors) {
+            const errorMessages = Object.values(err.errors).map((e) => e.message);
+            message = errorMessages.join(', ');
+        }
+        // Handle other mongoose errors
+        else if (err.message) {
+            message = err.message;
+        }
+        
+        res.status(400).json({success:false, message});
     }
 }
 
@@ -59,7 +75,13 @@ const sendTokenResponse = (user, statusCode, res) => {
     }
     res.status(statusCode).cookie('token', token, options).json({
         success: true,
-        token
+        token,
+        user: {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
     })
 }
 

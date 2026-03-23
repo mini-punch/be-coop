@@ -4,14 +4,18 @@ const BannedUser = require('../models/BannedUser');
 
 exports.getReservations = async (req,res,next) => {
     let query;
-    if(req.user.role !== 'admin'){
+    
+    // If own=true is specified, return only current user's reservations (even for admins)
+    const getOwnOnly = req.query.own === 'true';
+    
+    if(req.user.role !== 'admin' || getOwnOnly){
         //user ดูได้แค่ reservation ของตัวเอง
         query = Reservation.find({user:req.user.id}).populate({
             path: 'coop',
             select: 'name'
         });
     }else{
-        // admin ดูได้หมดเรยย
+        // admin ดูได้หมดเรยย (regardless of ?all parameter)
         query = Reservation.find()
         .populate({
             path: 'user',
